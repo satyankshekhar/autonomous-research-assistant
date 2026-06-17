@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Autonomous Research Analyst</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f7f2;
+        --panel: #ffffff;
+        --ink: #171717;
+        --muted: #626866;
+        --line: #d9ded6;
+        --accent: #176b5b;
+        --accent-2: #b2482d;
+        --soft: #eef4f0;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+        min-height: 100vh;
+      }
+
+      aside {
+        border-right: 1px solid var(--line);
+        padding: 28px;
+        background: var(--panel);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 26px;
+        line-height: 1.1;
+        letter-spacing: 0;
+      }
+
+      p {
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      label {
+        display: block;
+        margin: 28px 0 8px;
+        font-weight: 700;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 150px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        font: inherit;
+        line-height: 1.45;
+      }
+
+      button {
+        width: 100%;
+        min-height: 44px;
+        margin-top: 12px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--accent);
+        color: white;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+
+      .status {
+        margin-top: 18px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--soft);
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .output {
+        padding: 28px;
+        overflow: auto;
+      }
+
+      pre {
+        min-height: calc(100vh - 56px);
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 22px;
+        line-height: 1.55;
+      }
+
+      .error {
+        color: var(--accent-2);
+      }
+
+      @media (max-width: 820px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+
+        aside {
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        pre {
+          min-height: 420px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <aside>
+        <h1>Autonomous Research Analyst</h1>
+        <p>Plan, search, verify, find gaps, and generate a source-backed report from one research query.</p>
+        <form id="research-form">
+          <label for="query">Research query</label>
+          <textarea id="query" name="query">Research quantum computing startups in India</textarea>
+          <button type="submit" id="submit">Run research</button>
+        </form>
+        <div class="status" id="status">Ready. Add keys to .env for live search.</div>
+      </aside>
+      <section class="output" aria-live="polite">
+        <pre id="report">Your report will appear here.</pre>
+      </section>
+    </main>
+    <script>
+      const form = document.querySelector("#research-form");
+      const query = document.querySelector("#query");
+      const report = document.querySelector("#report");
+      const status = document.querySelector("#status");
+      const submit = document.querySelector("#submit");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        submit.disabled = true;
+        status.textContent = "Research in progress...";
+        report.textContent = "";
+        report.classList.remove("error");
+
+        try {
+          const response = await fetch("/research", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: query.value }),
+          });
+
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+
+          const data = await response.json();
+          report.textContent = data.report;
+          status.textContent = `${data.iterations} iteration(s), ${data.verified_facts.length} fact(s), ${data.sources.length} source(s).`;
+        } catch (error) {
+          report.classList.add("error");
+          report.textContent = error.message;
+          status.textContent = "Research failed.";
+        } finally {
+          submit.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
